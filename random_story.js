@@ -1,9 +1,9 @@
+// Serial flow control is implemented in this program. Four tasks, including checkForRSSFile, readRSSFile, downloadRSSFile, parseRSSFile are processed one after another, even if they are all asynschronous functions.
 var fs = require('fs');
 var request = require('request');
 var htmlparser = require('htmlparser');
 var configFilename = './rss_feeds.txt';
 
-// 
 function checkForRSSFile() {
   fs.exists(configFilename, function(exists) {
     if (!exists)
@@ -28,19 +28,19 @@ function readRSSFile(configFilename) {
 }
 
 function downloadRSSFile(feedUrl) {
-  request({uri: feedUrl}, function(err, res, body) {
+  request({uri: feedUrl}, function(err, res, rawHTML) {
     if (err) return next(err);
     if (res.statusCode != 200)
       return next(new Error('Abnormal response status code'))
 
-    next(null, body);
+    next(null, rawHTML);
   });
 }
 
-function parseRSSFile(rss) {
+function parseRSSFile(rawHTML) {
   var handler = new htmlparser.RssHandler();
   var parser = new htmlparser.Parser(handler);
-  parser.parseComplete(rss);
+  parser.parseComplete(rawHTML);
 
   if (!handler.dom.items.length)
     return next(new Error('No RSS items found'));
@@ -55,13 +55,13 @@ function parseRSSFile(rss) {
   // console.log(item.title);
   // console.log(item.link);
 
+// Tasks array: add each task to be performed to an array in execution order
 var tasks = [checkForRSSFile, readRSSFile, downloadRSSFile, parseRSSFile];
 
+// Helper function: it executes each task
 function next(err, result) {
   if (err) throw err;
-
   var currentTask = tasks.shift();
-
   if (currentTask) {
     currentTask(result);
   }
