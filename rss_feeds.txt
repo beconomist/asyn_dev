@@ -1,0 +1,2 @@
+http://rss.cnn.com/rss/edition_space.rss
+http://rss.cnn.com/rss/edition_technology.rss
